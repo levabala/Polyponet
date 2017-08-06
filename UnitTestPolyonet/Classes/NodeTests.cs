@@ -14,6 +14,22 @@ namespace Polyponet.Classes.Tests
     public class NodeTests
     {
         [TestMethod()]
+        public void ChunksMergingTest()
+        {
+            Node n1 = new Node();
+            byte[] data = new byte[] { 9, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4 };
+            DataChunk d1 = n1.generateDataChunk(data, 2, 9);
+            DataChunk d2 = n1.generateDataChunk(data, 0, 3);
+            DataChunk d3 = n1.generateDataChunk(data, 10, 11);
+            DataChunk d4 = n1.generateDataChunk(data, 16, 17);
+            DataChunk d5 = n1.generateDataChunk(data, 17, 19);
+
+            List<DataChunk> chunks = new List<DataChunk>() { d1, d2, d3, d4, d5 };
+
+            byte[] data2 = n1.combineChunks(chunks);
+        }
+
+        [TestMethod()]
         public void NodeInstanceTest()
         {
             Node n1 = new Node();
@@ -61,7 +77,7 @@ namespace Polyponet.Classes.Tests
             n1.resetChunksStorage();
             n2.resetChunksStorage();            
 
-            //now ENCRYPT!
+            //now ENCRYPT
             {
                 DataChunk d1 = n1.generateDataChunk(rawData2, true);
                 DataChunk d2 = n1.generateDataChunk(rawData1, hash1, 0, byteIndex1, true);
@@ -78,6 +94,9 @@ namespace Polyponet.Classes.Tests
                 Assert.AreNotEqual(d4, n2.chunks[hash1][1]);
 
                 Assert.IsFalse(n1.sendToDirect(n3, d1));
+
+                //chunks getting 
+                //n3.requestChunk(n2, hash1);
             }
         }                
     }

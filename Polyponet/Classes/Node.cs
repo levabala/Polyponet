@@ -160,9 +160,47 @@ namespace Polyponet.Classes
             return chunks[hash].Where((chunk) => { return endByte >= chunk.startByte && chunk.endByte >= startByte; }).ToList();
         }
 
-        public bool requestChunk()
+        public bool requestChunk(Node n, byte[] hash)
         {
+            List<DataChunk> chunks = n.getChunk(hash);
+            if (chunks == null || chunks.Count == 0) return false;
+
+            combineChunks(chunks);            
+
             return false;
+        }
+
+        public byte[] combineChunks(List<DataChunk> chunks)
+        {
+            int minStartByte = chunks.Min((chunk) => { return chunk.startByte; });
+            int maxStartByte = chunks.Max((chunk) => { return chunk.startByte; });
+            int minEndByte = chunks.Min((chunk) => { return chunk.endByte; });
+            int maxEndByte = chunks.Max((chunk) => { return chunk.endByte; });
+
+            int[] startByteArr = new int[chunks.Count];
+            int[] endByteArr = new int[chunks.Count];
+            for (int i = 0; i < startByteArr.Length; i++)
+                startByteArr[i] = endByteArr[i] = i;
+
+            Array.Sort(startByteArr, (i1, i2) => { return chunks[i1].startByte.CompareTo(chunks[i2].startByte); });
+            Array.Sort(endByteArr, (i1, i2) => { return chunks[i1].endByte.CompareTo(chunks[i2].endByte); });
+
+            int maxEndByteFilled = minEndByte;
+            byte[] data = new byte[maxEndByte + 1];
+            foreach (int index in startByteArr)
+            {
+                DataChunk chunk = chunks[index];
+                chunk.data.CopyTo(data, chunk.startByte);
+
+                if (chunk.endByte > maxEndByteFilled) maxEndByteFilled = chunk.endByte;
+            }
+
+            endByteArr.Reverse();
+            chunks[endByteArr[0]].data.CopyTo(data, chunks[endByteArr[0]].startByte);
+            for (int index = 1; index < chunks.Count && maxEndByteFilled < chunks[index].startByte; index++)
+                chunks[index].data.CopyTo(data, chunks[index].startByte);
+
+            return data;
         }
 
         #region DataChunk generators
@@ -207,7 +245,7 @@ namespace Polyponet.Classes
 
         public DataChunk generateDataChunk(byte[] dataOrigin, int startByte, int endByte, bool encrypt = false)
         {
-            byte[] data = dataOrigin.Skip(startByte).Take(endByte - startByte).ToArray();            
+            byte[] data = dataOrigin.Skip(startByte).Take(endByte - startByte + 1).ToArray();            
             byte[] hashOrigin = HashProvider.ComputeHash(dataOrigin);            
 
             DataChunk chunk = new DataChunk(data, hashOrigin, null, null, startByte, endByte);
@@ -228,7 +266,7 @@ namespace Polyponet.Classes
         public DataChunk generateDataChunk(
             byte[] dataOrigin, byte[] hashOrigin, int startByte, int endByte, bool encrypt = false)
         {
-            byte[] data = dataOrigin.Skip(startByte).Take(endByte - startByte).ToArray();            
+            byte[] data = dataOrigin.Skip(startByte).Take(endByte - startByte + 1).ToArray();            
 
             DataChunk chunk = new DataChunk(data, hashOrigin, null, null, startByte, endByte);
 

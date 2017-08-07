@@ -160,18 +160,25 @@ namespace Polyponet.Classes
             return chunks[hash].Where((chunk) => { return endByte >= chunk.startByte && chunk.endByte >= startByte; }).ToList();
         }
 
-        public bool requestChunk(Node n, byte[] hash)
+        public List<DataChunk> requestChunks(Node n, byte[] hash)
         {
             List<DataChunk> chunks = n.getChunk(hash);
-            if (chunks == null || chunks.Count == 0) return false;
+            if (chunks == null || chunks.Count == 0) return new List<DataChunk>();
 
-            combineChunks(chunks);            
+            /*for (int i = 0; i < chunks.Count; i++)
+                decryptDataChunk(chunks[i]);
 
-            return false;
+            combineChunks(chunks);*/
+
+            return chunks;
         }
 
         public byte[] combineChunks(List<DataChunk> chunks)
         {
+            foreach (DataChunk c in chunks)
+                if (c.encryptRounds.Count > 0)                
+                    throw new CryptographicUnexpectedOperationException("Chunks are not decrypted");                                    
+
             int minStartByte = chunks.Min((chunk) => { return chunk.startByte; });
             int maxStartByte = chunks.Max((chunk) => { return chunk.startByte; });
             int minEndByte = chunks.Min((chunk) => { return chunk.endByte; });
@@ -207,38 +214,25 @@ namespace Polyponet.Classes
         public DataChunk generateDataChunk(byte[] data, bool encrypt = false)
         {
             byte[] hashOrigin = HashProvider.ComputeHash(data);
+            byte[] chunkHash = HashProvider.ComputeHash(data);
+            byte[] chunkSign = RSAProvider.SignHash(chunkHash, HASH_ALGORITHM_NAME);
 
-            DataChunk chunk = new DataChunk(data, null, null);
+            DataChunk chunk = new DataChunk(data, chunkHash, chunkSign, new List<EncryptRound>());
 
-            if (encrypt)
-            {
-                encryptDataChunk(ref chunk);                
-            }
-            else
-            {                
-                byte[] sign = RSAProvider.SignHash(hashOrigin, HASH_ALGORITHM_NAME);
-                chunk.hash = hashOrigin;
-                chunk.sign = sign;
-            }
-
-            chunk.hashOrigin = hashOrigin;
+            if (encrypt)            
+                chunk = encryptDataChunk(chunk);                           
 
             return chunk;
         }
 
         public DataChunk generateDataChunk(byte[] data, byte[] hashOrigin, bool encrypt = false)
-        {                        
-            DataChunk chunk = new DataChunk(data, null, null);
+        {
+            byte[] chunkHash = HashProvider.ComputeHash(data);
+            byte[] chunkSign = RSAProvider.SignHash(chunkHash, HASH_ALGORITHM_NAME);
+            DataChunk chunk = new DataChunk(data, chunkHash, chunkSign, new List<EncryptRound>());
 
             if (encrypt)
-                encryptDataChunk(ref chunk);
-            else
-            {                
-                byte[] sign = RSAProvider.SignHash(hashOrigin, HASH_ALGORITHM_NAME);                
-                chunk.sign = sign;
-            }
-
-            chunk.hashOrigin = hashOrigin;
+                chunk = encryptDataChunk(chunk);            
 
             return chunk;
         }
@@ -246,19 +240,15 @@ namespace Polyponet.Classes
         public DataChunk generateDataChunk(byte[] dataOrigin, int startByte, int endByte, bool encrypt = false)
         {
             byte[] data = dataOrigin.Skip(startByte).Take(endByte - startByte + 1).ToArray();            
-            byte[] hashOrigin = HashProvider.ComputeHash(dataOrigin);            
+            byte[] hashOrigin = HashProvider.ComputeHash(dataOrigin);
+            byte[] chunkHash = HashProvider.ComputeHash(data);
+            byte[] chunkSign = RSAProvider.SignHash(chunkHash, HASH_ALGORITHM_NAME);
 
-            DataChunk chunk = new DataChunk(data, hashOrigin, null, null, startByte, endByte);
+            DataChunk chunk = new DataChunk(
+                data, hashOrigin, chunkHash, chunkSign, startByte, endByte, new List<EncryptRound>());
 
             if (encrypt)
-                encryptDataChunk(ref chunk);
-            else
-            {
-                byte[] hash = HashProvider.ComputeHash(data);
-                byte[] sign = RSAProvider.SignHash(hash, HASH_ALGORITHM_NAME);
-                chunk.hash = hash;
-                chunk.sign = sign;
-            }
+                chunk = encryptDataChunk(chunk);            
 
             return chunk;
         }
@@ -266,48 +256,41 @@ namespace Polyponet.Classes
         public DataChunk generateDataChunk(
             byte[] dataOrigin, byte[] hashOrigin, int startByte, int endByte, bool encrypt = false)
         {
-            byte[] data = dataOrigin.Skip(startByte).Take(endByte - startByte + 1).ToArray();            
+            byte[] data = dataOrigin.Skip(startByte).Take(endByte - startByte + 1).ToArray();
+            byte[] chunkHash = HashProvider.ComputeHash(data);
+            byte[] chunkSign = RSAProvider.SignHash(chunkHash, HASH_ALGORITHM_NAME);
 
-            DataChunk chunk = new DataChunk(data, hashOrigin, null, null, startByte, endByte);
+            DataChunk chunk = new DataChunk(
+                data, hashOrigin, chunkHash, chunkSign, startByte, endByte, new List<EncryptRound>());
 
             if (encrypt)
-                encryptDataChunk(ref chunk);
-            else
-            {
-                byte[] hash = HashProvider.ComputeHash(data);
-                byte[] sign = RSAProvider.SignHash(hash, HASH_ALGORITHM_NAME);
-                chunk.hash = hash;
-                chunk.sign = sign;
-            }
+                chunk = encryptDataChunk(chunk);            
 
             return chunk;
         }
 
         public DataChunk generateDataChunk(
             byte[] dataOrigin, byte[] hashOrigin, byte[] data, int startByte, int endByte, bool encrypt = false)
-        {                        
-            DataChunk chunk = new DataChunk(data, hashOrigin, null, null, startByte, endByte);
+        {
+            byte[] chunkHash = HashProvider.ComputeHash(data);
+            byte[] chunkSign = RSAProvider.SignHash(chunkHash, HASH_ALGORITHM_NAME);
+
+            DataChunk chunk = new DataChunk(
+                data, hashOrigin, chunkHash, chunkSign, startByte, endByte, new List<EncryptRound>());
 
             if (encrypt)
-                encryptDataChunk(ref chunk);
-            else
-            {
-                byte[] hash = HashProvider.ComputeHash(data);
-                byte[] sign = RSAProvider.SignHash(hash, HASH_ALGORITHM_NAME);
-                chunk.hash = hash;
-                chunk.sign = sign;
-            }
+                chunk = encryptDataChunk(chunk);            
 
             return chunk;
         }
         #endregion
 
-        private void encryptDataChunk(ref DataChunk chunk)
+        private DataChunk encryptDataChunk(DataChunk chunk)
         {
             AESProvider.GenerateKey();
             AESProvider.GenerateIV();
-            chunk.key = AESProvider.Key;
-            chunk.IV = AESProvider.IV;
+            byte[] key = AESProvider.Key;
+            byte[] IV = AESProvider.IV;
 
             //let's encrypt data 
             ICryptoTransform encryptor = AESProvider.CreateEncryptor();                        
@@ -319,13 +302,65 @@ namespace Polyponet.Classes
                     chunk.data = msEncrypt.ToArray();
                 }
 
-            //now encrypt AES key
-            chunk.key = RSAProvider.Encrypt(chunk.key, USE_AOEP);
+            byte[] data = chunk.data.ToArray();
+            ICryptoTransform decryptor = AESProvider.CreateDecryptor(key, IV);
+            using (MemoryStream msDecrypt = new MemoryStream(data))
+            {
+                using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Write))
+                {
+                    csDecrypt.Write(data, 0, data.Length);
+                    csDecrypt.FlushFinalBlock();
+                    csDecrypt.Close();
+                }                
+            }
 
-            //and update hash&sign
-            chunk.hash = HashProvider.ComputeHash(chunk.data);
-            chunk.sign = RSAProvider.SignHash(chunk.hash, HASH_ALGORITHM_NAME);
+            //now encrypt AES key
+            byte[] enKey = RSAProvider.Encrypt(key, USE_AOEP);
+
+            //and hash&sign
+            byte[] hash = HashProvider.ComputeHash(chunk.data);
+            byte[] sign = RSAProvider.SignHash(hash, HASH_ALGORITHM_NAME);
+
+            //now create Encrypt Round
+            EncryptRound round = new EncryptRound(enKey, IV, hash, sign);
+
+            //and add to rounds list
+            chunk.encryptRounds.Add(round);
+
+            return chunk;
         }
+
+        public DataChunk decryptDataChunk(DataChunk chunk)
+        {
+            int index = chunk.encryptRounds.Count-1;
+            while (index >= 0 && checkIfCanDecrypt(chunk.encryptRounds[index]))
+            {
+                EncryptRound round = chunk.encryptRounds[index];
+                byte[] decryptedKey = RSAProvider.Decrypt(round.key, USE_AOEP);
+
+                ICryptoTransform decryptor = AESProvider.CreateDecryptor(decryptedKey, round.IV);
+                using (MemoryStream msDecrypt = new MemoryStream(chunk.data))
+                {
+                    using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Write))
+                    {
+                        csDecrypt.Write(chunk.data, 0, chunk.data.Length);
+                        csDecrypt.FlushFinalBlock();
+                        csDecrypt.Close();                        
+                    }
+                }
+
+                chunk.encryptRounds.RemoveAt(index);
+                index--;
+            }
+
+            return chunk;
+        }
+
+        private bool checkIfCanDecrypt(EncryptRound round)
+        {
+            return RSAProvider.VerifyHash(round.hash, HASH_ALGORITHM_NAME, round.sign);
+        }
+            
 
         #region Data Sign Verifiers 
         public static bool verifyData(RSAParameters publicRSA, byte[] data, byte[] sign)
@@ -355,41 +390,62 @@ namespace Polyponet.Classes
             RSACryptoServiceProvider csp = new RSACryptoServiceProvider(RSA_KEY_SIZE);
             csp.ImportParameters(publicRSA);
 
-            HashAlgorithm hashProvider = getHashAlgorithm();            
+            HashAlgorithm hashProvider = getHashAlgorithm();
 
-            return csp.VerifyData(chunk.data, hashProvider, chunk.sign);
+            byte[] sign = chunk.chunkSign;
+            byte[] hash = chunk.chunkHash;
+            if (chunk.encryptRounds.Count > 0)
+            {
+                sign = chunk.encryptRounds.Last().sign;
+                hash = hashProvider.ComputeHash(chunk.data);                
+                bool hashesAreEqual = hash.SequenceEqual(chunk.encryptRounds[0].hash);
+                if (!hashesAreEqual) return false;
+            }
+
+            return csp.VerifyHash(hash, HASH_ALGORITHM_NAME, sign);
         }
-#endregion
+        #endregion
     }
 
     public struct DataChunk
     {
-        public byte[] data, hashOrigin, hash, sign, key, IV;
-        public int startByte, endByte; 
+        public byte[] data, hashOrigin, chunkHash, chunkSign;
+        public int startByte, endByte;
+        public List<EncryptRound> encryptRounds;
 
         public DataChunk(
-            byte[] data, byte[] hashOrigin, byte[] hash, byte[] sign, 
-            int startByte, int endByte, byte[] key = null, byte[] IV = null)
+            byte[] data, byte[] hashOrigin, byte[] chunkHash, byte[] chunkSign, 
+            int startByte, int endByte, List<EncryptRound> encryptRounds)
         {
             this.data = data;
             this.hashOrigin = hashOrigin;
-            this.hash = hash;
-            this.sign = sign;
+            this.chunkHash = chunkHash;
+            this.chunkSign = chunkSign;
             this.startByte = startByte;
             this.endByte = endByte;
-            this.key = key;
-            this.IV = IV;
+            this.encryptRounds = encryptRounds;
         }
 
-        public DataChunk(byte[] data, byte[] hash, byte[] sign, byte[] key = null, byte[] IV = null)
+        public DataChunk(byte[] data, byte[] chunkHash, byte[] chunkSign, List<EncryptRound> encryptRounds)
         {
             this.data = data;
-            this.hash = hashOrigin = hash;
-            this.sign = sign;
-            this.key = key;
-            this.IV = IV;
+            this.chunkHash = hashOrigin = chunkHash;
+            this.chunkSign = chunkSign;
+            this.encryptRounds = encryptRounds;
             startByte = 0;
             endByte = data.Length - 1;            
+        }        
+    }
+
+    public struct EncryptRound
+    {
+        public byte[] key, IV, hash, sign;
+        public EncryptRound(byte[] key, byte[] IV, byte[] hash, byte[] sign)
+        {
+            this.key = key;            
+            this.IV = IV;
+            this.hash = hash;
+            this.sign = sign;
         }
     }
 }

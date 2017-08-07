@@ -96,7 +96,9 @@ namespace Polyponet.Classes.Tests
                 Assert.IsFalse(n1.sendToDirect(n3, d1));
 
                 //chunks getting 
-                //n3.requestChunk(n2, hash1);
+                chunks = n3.requestChunks(n2, hash1);
+                for (int i = 0; i < chunks.Count; i++)
+                    chunks[i] = n1.decryptDataChunk(chunks[i]);
             }
         }                
     }

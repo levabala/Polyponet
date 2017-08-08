@@ -14,92 +14,51 @@ namespace Polyponet.Classes.Tests
     public class NodeTests
     {
         [TestMethod()]
-        public void ChunksMergingTest()
+        public void ChunksCreateTest()
         {
-            Node n1 = new Node();
-            byte[] data = new byte[] { 9, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4 };
-            DataChunk d1 = n1.generateDataChunk(data, 2, 9);
-            DataChunk d2 = n1.generateDataChunk(data, 0, 3);
-            DataChunk d3 = n1.generateDataChunk(data, 10, 11);
-            DataChunk d4 = n1.generateDataChunk(data, 16, 17);
-            DataChunk d5 = n1.generateDataChunk(data, 17, 19);
+            byte[] rawData = {
+                0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+                0, 0, 0, 0,
+                1, 1, 1, 1,
+                2, 2, 2, 2 };
 
-            List<DataChunk> chunks = new List<DataChunk>() { d1, d2, d3, d4, d5 };
+            Random rnd = new Random();
+            byte[] bigRawData = new byte[204800];
+            rnd.NextBytes(bigRawData);
 
-            byte[] data2 = n1.combineChunks(chunks);
+
+            Node n = new Node();
+            DataInstance dataInstance = n.generateDataInstance(rawData);
+
+            DataInstance dataInstanceEncrypted = n.encryptData(dataInstance, 2);
+            List<DataChunk> chunks = n.generateDataChunks(dataInstanceEncrypted, 3);
+            //now we have some encrypted&signed chunks
+
+            DataChunk mergedChunk = n.combineChunks(chunks);
+            DataInstance? dataInstance2 = n.chunkToInstance(mergedChunk);
+            if (!dataInstance2.HasValue)
+                Assert.Fail();
+
+            DataInstance decryptedData = n.decryptData(dataInstance2.Value);
+            Assert.IsTrue(
+                decryptedData.data.SequenceEqual(dataInstance.data) && 
+                decryptedData.hash.SequenceEqual(dataInstance.hash) &&
+                decryptedData.sign.SequenceEqual(dataInstance.sign));
         }
 
         [TestMethod()]
-        public void NodeInstanceTest()
+        public void ChunksTest()
         {
-            Node n1 = new Node();
-            Node n2 = new Node();            
-
-            //verifying 
-            byte[] token = Encoding.ASCII.GetBytes("testToken");
-            if (!Node.verifyData(n1.publicRSA, token, n1.verifyMyself(token)))
-                Assert.Fail();
-            
-            //add as trusted
-            n1.requestTrust(n2);
-            Assert.IsTrue(n1.trustedNodes.ContainsKey(n2.deviceId) && n2.trustedNodes.ContainsKey(n1.deviceId));
-
-            //data sending 
-            byte[] rawData1 = new byte[] { 0, 12, 48, 33, 13, 100 };
-            byte[] rawData2 = new byte[] { 1, 1, 1, 0, 0, 0 };
-            byte[] hash1 = Node.getHashAlgorithm().ComputeHash(rawData1);
-            byte[] hash2 = Node.getHashAlgorithm().ComputeHash(rawData2);
-            int byteIndex1 = 1;
-            int byteIndex2 = 3;
-            byte[] chunk1 = rawData1.Take(byteIndex1).ToArray();
-            byte[] chunk2 = rawData1.Skip(byteIndex1).Take(byteIndex2-byteIndex1).ToArray();
-            byte[] chunk3 = rawData1.Skip(byteIndex2).Take(rawData1.Length - byteIndex2 - 1).ToArray();
-
-            //without any encryption
+            Node originNode = new Node();
+            List<Node> friendlyNodes = new List<Node>();
+            for (int i = 0; i < 10; i++)
             {
-                DataChunk d1 = n1.generateDataChunk(rawData2);
-                DataChunk d2 = n1.generateDataChunk(rawData1, hash1, 0, byteIndex1);
-                DataChunk d3 = n1.generateDataChunk(rawData1, hash1, byteIndex1, byteIndex2);
-                DataChunk d4 = n1.generateDataChunk(rawData1, hash1, chunk3, byteIndex2, rawData1.Length - 1);
-
-                Node n3 = new Node();
-                Assert.IsTrue(n1.sendToDirect(n2, d1) && n1.sendToDirect(n2, d2) && n1.sendToDirect(n2, d3));
-
-                List<DataChunk> chunks = n2.chunks[hash2];
-                Assert.AreEqual(d1, chunks[0]);//n2.chunks[hash2][0]);
-                Assert.AreEqual(d2, n2.chunks[hash1][0]);
-                Assert.AreEqual(d3, n2.chunks[hash1][1]);
-                Assert.AreNotEqual(d4, n2.chunks[hash1][1]);
-
-                Assert.IsFalse(n1.sendToDirect(n3, d1));
+                Node n = new Node();
+                n.giveTrust(originNode);
+                friendlyNodes.Add(n);
             }
 
-            n1.resetChunksStorage();
-            n2.resetChunksStorage();            
 
-            //now ENCRYPT
-            {
-                DataChunk d1 = n1.generateDataChunk(rawData2, true);
-                DataChunk d2 = n1.generateDataChunk(rawData1, hash1, 0, byteIndex1, true);
-                DataChunk d3 = n1.generateDataChunk(rawData1, hash1, byteIndex1, byteIndex2, true);
-                DataChunk d4 = n1.generateDataChunk(rawData1, hash1, chunk3, byteIndex2, rawData1.Length - 1, true);
-
-                Node n3 = new Node();
-                Assert.IsTrue(n1.sendToDirect(n2, d1) && n1.sendToDirect(n2, d2) && n1.sendToDirect(n2, d3));
-
-                List<DataChunk> chunks = n2.chunks[hash2];
-                Assert.AreEqual(d1, chunks[0]);//n2.chunks[hash2][0]);
-                Assert.AreEqual(d2, n2.chunks[hash1][0]);
-                Assert.AreEqual(d3, n2.chunks[hash1][1]);
-                Assert.AreNotEqual(d4, n2.chunks[hash1][1]);
-
-                Assert.IsFalse(n1.sendToDirect(n3, d1));
-
-                //chunks getting 
-                chunks = n3.requestChunks(n2, hash1);
-                for (int i = 0; i < chunks.Count; i++)
-                    chunks[i] = n1.decryptDataChunk(chunks[i]);
-            }
         }                
     }
 }

@@ -286,33 +286,24 @@ namespace Polyponet.Classes
         #endregion
 
         private DataChunk encryptDataChunk(DataChunk chunk)
-        {
+        {            
             AESProvider.GenerateKey();
-            AESProvider.GenerateIV();
+            AESProvider.GenerateIV();            
             byte[] key = AESProvider.Key;
             byte[] IV = AESProvider.IV;
-
-            //let's encrypt data 
-            ICryptoTransform encryptor = AESProvider.CreateEncryptor();                        
-            using (MemoryStream msEncrypt = new MemoryStream())            
-                using (CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
+            
+            //let's encrypt data             
+            byte[] encrypted;
+            using (MemoryStream mstream = new MemoryStream())            
+                using (AesCryptoServiceProvider aesProvider = new AesCryptoServiceProvider())
                 {
-                    using (StreamWriter swEncrypt = new StreamWriter(csEncrypt))                                            
-                        swEncrypt.Write(chunk.data);                    
-                    chunk.data = msEncrypt.ToArray();
+                    using (CryptoStream cryptoStream = new CryptoStream(mstream,
+                        aesProvider.CreateEncryptor(key, IV), CryptoStreamMode.Write))
+                        cryptoStream.Write(chunk.data, 0, chunk.data.Length);
+                    encrypted = mstream.ToArray();
                 }
 
-            byte[] data = chunk.data.ToArray();
-            ICryptoTransform decryptor = AESProvider.CreateDecryptor(key, IV);
-            using (MemoryStream msDecrypt = new MemoryStream(data))
-            {
-                using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Write))
-                {
-                    csDecrypt.Write(data, 0, data.Length);
-                    csDecrypt.FlushFinalBlock();
-                    csDecrypt.Close();
-                }                
-            }
+            chunk.data = encrypted;
 
             //now encrypt AES key
             byte[] enKey = RSAProvider.Encrypt(key, USE_AOEP);
@@ -329,7 +320,7 @@ namespace Polyponet.Classes
 
             return chunk;
         }
-
+        
         public DataChunk decryptDataChunk(DataChunk chunk)
         {
             int index = chunk.encryptRounds.Count-1;
@@ -338,16 +329,23 @@ namespace Polyponet.Classes
                 EncryptRound round = chunk.encryptRounds[index];
                 byte[] decryptedKey = RSAProvider.Decrypt(round.key, USE_AOEP);
 
-                ICryptoTransform decryptor = AESProvider.CreateDecryptor(decryptedKey, round.IV);
-                using (MemoryStream msDecrypt = new MemoryStream(chunk.data))
+                byte[] plain;
+                int count;
+                using (MemoryStream mStream = new MemoryStream(chunk.data))
                 {
-                    using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Write))
+                    using (AesCryptoServiceProvider aesProvider = new AesCryptoServiceProvider())
                     {
-                        csDecrypt.Write(chunk.data, 0, chunk.data.Length);
-                        csDecrypt.FlushFinalBlock();
-                        csDecrypt.Close();                        
+                        aesProvider.Mode = CipherMode.CBC;
+                        using (CryptoStream cryptoStream = new CryptoStream(mStream,
+                         aesProvider.CreateDecryptor(decryptedKey, round.IV), CryptoStreamMode.Read))
+                        {
+                            plain = new byte[chunk.data.Length];
+                            count = cryptoStream.Read(plain, 0, plain.Length);
+                        }
                     }
                 }
+                chunk.data = new byte[count];
+                Array.Copy(plain, chunk.data, count);                
 
                 chunk.encryptRounds.RemoveAt(index);
                 index--;

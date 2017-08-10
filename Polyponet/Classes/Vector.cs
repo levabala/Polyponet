@@ -9,17 +9,25 @@ using System.Windows;
 
 namespace Polyponet.Classes
 {
-    class Vector
+    public class Vector
     {
         public double length, alpha;
         public Point startPoint, endPoint;
 
         public Vector()
         {
-            length = 0.001f;
-            alpha = 0f;
+            length = 0.001;
+            alpha = 0;
             startPoint = new Point(0, 0);
             endPoint = new Point(1, 1);
+        }
+
+        public Vector(Vector v)
+        {
+            length = v.length;
+            alpha = v.alpha;
+            startPoint = v.startPoint;
+            endPoint = v.endPoint;
         }
 
         public Vector(double length, double alpha, Point startPoint)
@@ -40,8 +48,8 @@ namespace Polyponet.Classes
 
         public Point getEndPoint()
         {
-            Point pf = new Point(this.length * Math.Cos(alpha) + startPoint.X, length * Math.Sin(alpha) + startPoint.Y);
-            return pf;
+            Point p = new Point(length * Math.Cos(alpha) + startPoint.X, length * Math.Sin(alpha) + startPoint.Y);
+            return p;
         }
 
         public void changeDirection(double alpha)
@@ -61,12 +69,14 @@ namespace Polyponet.Classes
             return angle;
         }
 
-        public double getAlpha(Point endPoint, double length)
+        public static double getAlpha(Point startPoint, Point endPoint)
         {
-            double dx = Math.Abs(this.endPoint.X - startPoint.X);
-            double dy = Math.Abs(this.endPoint.Y - startPoint.Y);
+            if (startPoint.X == endPoint.X && startPoint.Y == endPoint.Y)
+                return 0;
+            double dx = Math.Abs(endPoint.X - startPoint.X);
+            double dy = Math.Abs(endPoint.Y - startPoint.Y);
             double angle = Math.Atan(dx / dy);
-            if (dx < 0) angle = angle - 3 * Math.PI;
+            if (dx < 0) angle = angle - 3 * Math.PI;            
             return angle;
         }
 
@@ -77,20 +87,25 @@ namespace Polyponet.Classes
             return (double)Math.Sqrt(lengthX * lengthX + lengthY * lengthY);
         }
 
-        public double getLength(Point endPoint, Point startPoint)
+        public static double getLength(Point endPoint, Point startPoint)
         {
             double lengthX = Math.Abs(endPoint.X - startPoint.X);
             double lengthY = Math.Abs(endPoint.Y - startPoint.Y);
             return (double)Math.Sqrt(lengthX * lengthX + lengthY * lengthY);
         }
 
-        public Vector sum(Vector a, Vector b)
+        public Vector clone()
         {
-            Vector sumV = new Vector();
-            sumV.startPoint = a.startPoint;
-            sumV.endPoint = b.endPoint;
-            sumV.length = getLength(sumV.endPoint, sumV.startPoint);
-            sumV.alpha = getAlpha(sumV.endPoint, sumV.length);
+            return new Vector(this);
+        }
+
+        public static Vector sum(Vector a, Vector b)
+        {
+            Vector sumV = a.clone();
+            Vector tv1 = b.clone();
+            b.startPoint = sumV.endPoint;
+            b.endPoint = b.getEndPoint();
+            sumV = new Vector(sumV.startPoint, b.endPoint);            
             return sumV;
         }
     }

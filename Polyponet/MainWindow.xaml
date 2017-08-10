@@ -1,12 +1,21 @@
-﻿<Window x:Class="Polyponet.MainWindow"
+﻿<Window
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Polyponet"
+        xmlns:Classes="clr-namespace:Polyponet.Classes" x:Class="Polyponet.MainWindow"
+        x:Name="MyWindow"
         mc:Ignorable="d"
-        Title="MainWindow" Height="350" Width="525">
-    <Grid>
-        
+        Title="MainWindow" WindowState="Maximized">
+    <Grid x:Name="MainGrid">
+        <Slider x:Name="SliderNodeRadius" Margin="0,10,9.6,0" Height="18" VerticalAlignment="Top" Minimum="0.1" Maximum="10" HorizontalAlignment="Right" Width="150"/>
+        <Slider x:Name="SliderElasticity" HorizontalAlignment="Right" Margin="0,33,9.6,0" Width="150" Height="18" VerticalAlignment="Top" Minimum="1" Maximum="100"/>
+        <Slider x:Name="SliderMinDistance" HorizontalAlignment="Right" Margin="0,56,9.6,0" Width="150" Height="18" VerticalAlignment="Top" Minimum="0.1" Maximum="10"/>
+        <Slider x:Name="SliderVectorScale" HorizontalAlignment="Right" Margin="0,79,9.6,0" Width="150" Height="18" VerticalAlignment="Top" Minimum="0" Maximum="20"/>
+        <Label Content="Node Radius" Margin="516,2,164.6,0" VerticalAlignment="Top" HorizontalAlignment="Right"/>
+        <Label Content="Elasticity" Margin="516,25,164.6,0" VerticalAlignment="Top" HorizontalAlignment="Right"/>
+        <Label Content="Min Distance" Margin="516,48,164.6,0" VerticalAlignment="Top" HorizontalAlignment="Right"/>
+        <Label Content="Vector Scale" Margin="516,71,164.6,0" VerticalAlignment="Top" HorizontalAlignment="Right"/>
     </Grid>
 </Window>

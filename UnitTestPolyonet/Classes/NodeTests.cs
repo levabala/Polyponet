@@ -23,9 +23,8 @@ namespace Polyponet.Classes.Tests
                 2, 2, 2, 2 };
 
             Random rnd = new Random();
-            byte[] bigRawData = new byte[204800];
+            byte[] bigRawData = new byte[2048];
             rnd.NextBytes(bigRawData);
-
 
             Node n = new Node();
             DataInstance dataInstance = n.generateDataInstance(rawData);

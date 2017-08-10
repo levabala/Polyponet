@@ -10,8 +10,8 @@ namespace Polyponet.Classes
 {
     public class Node
     {
-        public static readonly int RSA_KEY_SIZE = 2048;
-        public static readonly int AES_KEY_SIZE = 192;
+        public static readonly int RSA_KEY_SIZE = 512;
+        public static readonly int AES_KEY_SIZE = 128;
         public static readonly bool USE_AOEP = true;
         public static readonly string HASH_ALGORITHM_NAME = "SHA256";
         public static HashAlgorithm getHashAlgorithm() { return new SHA256CryptoServiceProvider(); }
@@ -59,7 +59,7 @@ namespace Polyponet.Classes
         HashAlgorithm HashProvider = new SHA256CryptoServiceProvider();                
 
         public Node()
-        {
+        {            
             AESProvider.KeySize = AES_KEY_SIZE;
 
             publicRSA = RSAProvider.ExportParameters(false);

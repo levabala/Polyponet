@@ -16,8 +16,10 @@ namespace Polyponet.Classes
         public double NODE_RADIUS = 10;
         public double ELASTICITY = 70;
         public double MIN_DISTANCE = 0.3;
+        public double MOUSE_MIN_DISTANCE = 1;
         public double VECTOR_SCALE = 2;
         public double ACCELERATION_MAX = 0.2;
+        public double INTERACTION_WEIGHT = 2;
 
         private Point mouseNodePosition = new Point(-10, -10);
         private List<GeometryDrawing> drawings = new List<GeometryDrawing>();
@@ -202,7 +204,7 @@ namespace Polyponet.Classes
 
                 double distance = v.length;
                 double interaction = 0.5;
-                double minDistance = MIN_DISTANCE;
+                double minDistance = MOUSE_MIN_DISTANCE;
 
                 /*if (distance < MIN_DISTANCE / 2)
                     continue;*/
@@ -224,8 +226,8 @@ namespace Polyponet.Classes
 
         private double calcInteraction(Node n1, Node n2)
         {
-            double interaction = Convert.ToDouble(n1.trustedNodes.ContainsKey(n2.deviceId)) * 1;
-            return interaction;
+            double interaction = Convert.ToDouble(n1.trustedNodes.ContainsKey(n2.deviceId)) * 0.5;
+            return interaction * INTERACTION_WEIGHT;
         }
 
         private double getPullRate(double distance, double interaction, double minDistance, double elasticity)

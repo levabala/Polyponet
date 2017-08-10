@@ -20,9 +20,7 @@ namespace Polyponet.Classes
         public RSAParameters publicRSA;
         public bool online = true;
         public int chunkSize = 5;
-
-        //temporary public
-
+        
         public RSAParameters privateRSA;
         public Dictionary<byte[], Node> trustedNodes = new Dictionary<byte[], Node>(new ByteArrayComparer());
         public Dictionary<byte[], Node> familiarNodes = new Dictionary<byte[], Node>(new ByteArrayComparer());
@@ -169,22 +167,13 @@ namespace Polyponet.Classes
         public List<DataChunk> requestChunks(Node n, byte[] hash)
         {
             List<DataChunk> chunks = n.getChunk(hash);
-            if (chunks == null || chunks.Count == 0) return new List<DataChunk>();
-
-            /*for (int i = 0; i < chunks.Count; i++)
-                decryptDataChunk(chunks[i]);
-
-            combineChunks(chunks);*/
+            if (chunks == null || chunks.Count == 0) return new List<DataChunk>();            
 
             return chunks;
         }
 
         public DataChunk combineChunks(List<DataChunk> chunks)
-        {
-            /*foreach (DataChunk c in chunks)
-                if (c.encryptRounds.Count > 0)                
-                    throw new CryptographicUnexpectedOperationException("Chunks are not decrypted");*/
-
+        {            
             if (!checkCommonOrigin(chunks))
                 throw new Exception("Different hashOrigin");
 

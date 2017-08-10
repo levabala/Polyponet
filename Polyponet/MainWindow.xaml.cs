@@ -65,6 +65,8 @@ namespace Polyponet
             SliderElasticity.Value = netVisualizer.ELASTICITY;
             SliderMinDistance.Value = netVisualizer.MIN_DISTANCE;
             SliderVectorScale.Value = netVisualizer.VECTOR_SCALE;
+            SliderInteractionWeight.Value = netVisualizer.INTERACTION_WEIGHT;
+            SliderMouseMinDistance.Value = netVisualizer.MOUSE_MIN_DISTANCE;
 
             SliderNodeRadius.ValueChanged += (o, ev) =>
             {
@@ -81,6 +83,14 @@ namespace Polyponet
             SliderVectorScale.ValueChanged += (o, ev) =>
             {
                 netVisualizer.VECTOR_SCALE = ev.NewValue;
+            };
+            SliderInteractionWeight.ValueChanged += (o, ev) =>
+            {
+                netVisualizer.INTERACTION_WEIGHT= ev.NewValue;
+            };
+            SliderMouseMinDistance.ValueChanged += (o, ev) =>
+            {
+                netVisualizer.MOUSE_MIN_DISTANCE = ev.NewValue;
             };
 
             MainGrid.Children.Add(netVisualizer);

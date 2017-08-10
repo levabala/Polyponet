@@ -13,11 +13,13 @@ namespace Polyponet.Classes
 {
     class NetworkVisualizer : FrameworkElement
     {
-        public double NODE_RADIUS = 1;
-        public double ELASTICITY = 30;
-        public double MIN_DISTANCE = 0.6;
-        public double VECTOR_SCALE = 5;
+        public double NODE_RADIUS = 10;
+        public double ELASTICITY = 70;
+        public double MIN_DISTANCE = 0.3;
+        public double VECTOR_SCALE = 2;
+        public double ACCELERATION_MAX = 0.2;
 
+        private Point mouseNodePosition = new Point(-10, -10);
         private List<GeometryDrawing> drawings = new List<GeometryDrawing>();
         private Matrix m;
         private DispatcherTimer renderTimer;
@@ -56,11 +58,7 @@ namespace Polyponet.Classes
             set
             {
                 network.OnNodeAdd -= Network_OnNodeAdd;
-
-                network = value;
-                visualNodes = new Dictionary<byte[], NodeVisual>(new ByteArrayComparer());
-                registerNodes(network.nodes);
-                network.OnNodeAdd += Network_OnNodeAdd;
+                changeNetwork(value);
             }
         }
 
@@ -71,18 +69,31 @@ namespace Polyponet.Classes
             renderTimer.Interval = new TimeSpan(0, 0, 0, 0, 10);
             renderTimer.Start();
 
-            this.network = network;
-            registerNodes(network.nodes);
-
-            network.OnNodeAdd += Network_OnNodeAdd;
+            changeNetwork(network);
 
             m.Translate(2, 2);
             m.Scale(50, 50);            
         }        
 
+        private void changeNetwork(Network network)
+        {
+            visualNodes = new Dictionary<byte[], NodeVisual>(new ByteArrayComparer());            
+
+            this.network = network;
+            registerNodes(network.nodes);            
+
+            network.OnNodeAdd += Network_OnNodeAdd;
+        }
+
         public void registerScaling(UIElement element)
         {
             element.MouseWheel += NetworkVisualizer_MouseWheel;
+            element.MouseMove += NetworkVisualizer_MouseMove;
+        }
+
+        private void NetworkVisualizer_MouseMove(object sender, MouseEventArgs e)
+        {
+            mouseNodePosition = transformPoint(e.GetPosition(this));
         }
 
         private void NetworkVisualizer_MouseWheel(object sender, MouseWheelEventArgs e)
@@ -119,7 +130,7 @@ namespace Polyponet.Classes
         {
             if (!visualNodes.ContainsKey(n.deviceId))
             {
-                int rowNumber = (int)Math.Floor((double)visualNodes.Values.Count / columnsCount);
+                int rowNumber = (int)Math.Floor(visualNodes.Values.Count / columnsCount);
                 double rowWidth = columnsCount * spawnDistance;
                 double y = rowNumber * spawnDistance;
                 double x = visualNodes.Values.Count * spawnDistance - rowNumber * rowWidth;
@@ -131,9 +142,15 @@ namespace Polyponet.Classes
         protected override void OnRender(DrawingContext context)
         {
             resetConnectionsList();
+
+            calcForcePoint(mouseNodePosition);
+
             foreach (Node n in network.nodes)
             {
                 NodeVisual nodeVisual = calcForces(n, network.nodes);
+                if (nodeVisual.moveVector.length > ACCELERATION_MAX)
+                    nodeVisual.moveVector.length = ACCELERATION_MAX;
+
                 nodeVisual.applyForce();
                 nodeVisual.render(context, m, NODE_RADIUS);                
             }
@@ -177,6 +194,27 @@ namespace Polyponet.Classes
             return targetNV;
         }
 
+        private void calcForcePoint(Point p, double coeff = 1, double time = 1)
+        {
+            foreach (NodeVisual nv in visualNodes.Values)
+            {                                
+                Vector v = new Vector(nv.position, p);
+
+                double distance = v.length;
+                double interaction = 0.5;
+                double minDistance = MIN_DISTANCE;
+
+                /*if (distance < MIN_DISTANCE / 2)
+                    continue;*/
+
+                v.length = getPullRate(distance, interaction, minDistance, ELASTICITY) * time;               
+                v.endPoint = v.getEndPoint();
+
+                drawVector(v);                
+                nv.addForce(v);                
+            }
+        }
+
         public void resetConnectionsList()
         {
             connections = new Dictionary<byte[], List<byte[]>>(new ByteArrayComparer());
@@ -186,7 +224,7 @@ namespace Polyponet.Classes
 
         private double calcInteraction(Node n1, Node n2)
         {
-            double interaction = Convert.ToDouble(n1.trustedNodes.ContainsKey(n2.deviceId)) * 0.5;
+            double interaction = Convert.ToDouble(n1.trustedNodes.ContainsKey(n2.deviceId)) * 1;
             return interaction;
         }
 

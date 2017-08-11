@@ -101,7 +101,7 @@ namespace Polyponet
         private void initScene()
         {            
             network = new Network();
-            network.dispatcherTimer.Tick += DispatcherTimer_Tick;
+            network.timerFast.Tick += DispatcherTimer_Tick;
 
             netVisualizer.Network = network;
             netVisualizer.resetConnectionsList();

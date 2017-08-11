@@ -152,8 +152,12 @@ namespace Polyponet.Classes
                 NodeVisual nodeVisual = calcForces(n, network.nodes);
                 if (nodeVisual.moveVector.length > ACCELERATION_MAX)
                     nodeVisual.moveVector.length = ACCELERATION_MAX;
-
                 nodeVisual.applyForce();
+
+                if (n.online)
+                    nodeVisual.pen.Brush = Brushes.Green;
+                else nodeVisual.pen.Brush = Brushes.DarkGray;
+
                 nodeVisual.render(context, m, NODE_RADIUS);                
             }
 
@@ -294,7 +298,7 @@ namespace Polyponet.Classes
             pen = new Pen(Brushes.DarkGray, 3);
             position = new Point(x, y);            
             moveVector = new Vector(position, position);
-        }
+        }        
 
         public void addForce(Vector forceV)
         {

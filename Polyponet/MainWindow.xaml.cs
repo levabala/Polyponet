@@ -92,6 +92,10 @@ namespace Polyponet
             {
                 netVisualizer.MOUSE_MIN_DISTANCE = ev.NewValue;
             };
+            SliderMouseForce.ValueChanged += (o, ev) =>
+            {
+                netVisualizer.MOUSE_FORCE_COEFFICIENT = ev.NewValue;
+            };
 
             MainGrid.Children.Add(netVisualizer);
 
@@ -100,47 +104,11 @@ namespace Polyponet
 
         private void initScene()
         {            
-            network = new Network();
+            network = new Network(3, 1);
             network.timerFast.Tick += DispatcherTimer_Tick;
 
             netVisualizer.Network = network;
-            netVisualizer.resetConnectionsList();
-
-            Node n1 = new Node();
-            Node n2 = new Node();
-            Node n3 = new Node();
-            Node n4 = new Node();
-
-            n1.requestTrust(n2);
-            n3.requestTrust(n1);
-
-            Node n5 = new Node();
-            Node n6 = new Node();
-            Node n7 = new Node();
-            Node n8 = new Node();
-
-            n5.requestTrust(n4);
-            n5.requestTrust(n6);
-            n5.requestTrust(n7);
-            n5.requestTrust(n8);
-
-            Node n9 = new Node();
-            Node n10 = new Node();
-            Node n11 = new Node();
-            Node n12 = new Node();
-            Node n13 = new Node();
-            Node n14 = new Node();
-            Node n15 = new Node();
-            Node n16 = new Node();
-
-            n9.requestTrust(n10);
-            n9.requestTrust(n11);
-            n9.requestTrust(n16);
-            n12.requestTrust(n16);
-            n14.requestTrust(n13);
-            n1.requestTrust(n16);
-
-            network.addNodes(new Node[] { n1, n2, n3, n4, n5, n6, n7, n8, n9, n10, n11, n12, n13, n14, n15, n16 });
+            netVisualizer.resetConnectionsList();            
         }
 
         private void DispatcherTimer_Tick(object sender, EventArgs e)

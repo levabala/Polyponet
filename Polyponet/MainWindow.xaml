@@ -10,10 +10,10 @@
         Title="MainWindow" WindowState="Maximized">
     <Grid x:Name="MainGrid">
         <Slider x:Name="SliderNodeRadius" Margin="0,10,9.6,0" Height="18" VerticalAlignment="Top" Minimum="0.1" Maximum="10" HorizontalAlignment="Right" Width="150"/>
-        <Slider x:Name="SliderElasticity" HorizontalAlignment="Right" Margin="0,33,9.6,0" Width="150" Height="18" VerticalAlignment="Top" Minimum="1" Maximum="100"/>
+        <Slider x:Name="SliderElasticity" HorizontalAlignment="Right" Margin="0,33,9.6,0" Width="150" Height="18" VerticalAlignment="Top" Minimum="1" Maximum="200"/>
         <Slider x:Name="SliderMinDistance" HorizontalAlignment="Right" Margin="0,56,9.6,0" Width="150" Height="18" VerticalAlignment="Top" Minimum="0.1" Maximum="10"/>
         <Slider x:Name="SliderVectorScale" HorizontalAlignment="Right" Margin="0,79,9.6,0" Width="150" Height="18" VerticalAlignment="Top" Minimum="0" Maximum="20"/>
-        <Slider x:Name="SliderInteractionWeight" HorizontalAlignment="Right" Margin="0,102,9.6,0" Width="150" Height="18" VerticalAlignment="Top" Minimum="-20" Maximum="20"/>
+        <Slider x:Name="SliderInteractionWeight" HorizontalAlignment="Right" Margin="0,102,9.6,0" Width="150" Height="18" VerticalAlignment="Top" Minimum="0" Maximum="1"/>
         <Slider x:Name="SliderMouseMinDistance" HorizontalAlignment="Right" Margin="0,125,9.6,0" Width="150" Height="18" VerticalAlignment="Top" Minimum="0.01" Maximum="10"/>
         <Label Content="Node Radius" Margin="516,2,164.6,0" VerticalAlignment="Top" HorizontalAlignment="Right"/>
         <Label Content="Elasticity" Margin="516,25,164.6,0" VerticalAlignment="Top" HorizontalAlignment="Right"/>
@@ -21,5 +21,7 @@
         <Label Content="Vector Scale" Margin="516,71,164.6,0" VerticalAlignment="Top" HorizontalAlignment="Right"/>
         <Label Content="Interaction Weight" Margin="0,94,164.6,0" VerticalAlignment="Top" HorizontalAlignment="Right"/>
         <Label Content="Mouse Min Distance" Margin="0,117,164.6,0" VerticalAlignment="Top" HorizontalAlignment="Right"/>
+        <Slider x:Name="SliderMouseForce" HorizontalAlignment="Right" Margin="0,148,10,0" Width="150" Height="18" VerticalAlignment="Top" Minimum="-1" Maximum="1"/>
+        <Label Content="Mouse Force" Margin="0,140,165,0" VerticalAlignment="Top" HorizontalAlignment="Right"/>
     </Grid>
 </Window>

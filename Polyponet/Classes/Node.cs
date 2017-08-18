@@ -17,7 +17,7 @@ namespace Polyponet.Classes
         public static HashAlgorithm getHashAlgorithm() { return new SHA256CryptoServiceProvider(); }
 
         public double AVAILABILITY_MIN_CHANCE = 0.8;
-        public double CHUNK_SIZE = 5;
+        public int CHUNK_SIZE = 5;
 
         public byte[] deviceId = Guid.NewGuid().ToByteArray();
         public RSAParameters publicRSA;
@@ -114,9 +114,19 @@ namespace Polyponet.Classes
             return true;
         }
 
-        public void putData(byte[] data, bool encrypt)
+        public DataInstance putData(byte[] data, int encryptRoundsCount = 0)
         {
+            byte[] hash = HashProvider.ComputeHash(data);
+            byte[] sign = RSAProvider.SignHash(hash, HASH_ALGORITHM_NAME);
+            DataInstance dataInst = new DataInstance(data, hash, sign);
+            if (encryptRoundsCount > 0)
+                encryptData(dataInst, encryptRoundsCount);
 
+            List<DataChunk> chunks = generateDataChunks(dataInst, CHUNK_SIZE);
+            foreach (DataChunk chunk in chunks)
+                putChunk(chunk);
+
+            return dataInst;
         }
 
         private void putChunk(DataChunk chunk)
@@ -388,7 +398,6 @@ namespace Polyponet.Classes
             return RSAProvider.VerifyHash(round.hash, HASH_ALGORITHM_NAME, round.sign);
         }
         #endregion
-
 
         #region Data Sign Verifiers 
         public static bool verifyData(RSAParameters publicRSA, byte[] data, byte[] sign)

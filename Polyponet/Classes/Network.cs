@@ -40,6 +40,19 @@ namespace Polyponet.Classes
             };
         }
 
+        public Network(int nodesCount, double connectChance = 0.5) : this()
+        {            
+            Random rnd = new Random();
+            for (int i = 0; i < nodesCount; i++)
+            {
+                Node n = new Node();
+                addNode(n);
+                for (int ii = 0; ii < i; ii++)
+                    if (rnd.NextDouble() <= connectChance)
+                        n.requestTrust(nodes[ii]);
+            }
+        }
+
         private void TimerRare_Tick(object sender, EventArgs e)
         {
             
